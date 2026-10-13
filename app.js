@@ -112,7 +112,7 @@
     try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch {}
     const ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
     audio.ctx = ctx;
-    await ctx.audioWorklet.addModule('engine-worklet.js');
+    await ctx.audioWorklet.addModule('engine-worklet.js?v=3');
     const node = new AudioWorkletNode(ctx, 'engine-processor', { numberOfInputs: 0, outputChannelCount: [1] });
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass'; filter.frequency.value = 2000; filter.Q.value = 0.6;
