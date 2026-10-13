@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07090e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Kükreme</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Saira+Condensed:wght@500;600;700;800&display=swap">
+<style>
+/* Gece kokpiti v3: grafit-lacivert zemin, tek sıcak vurgu = amber ibre, kırmızı = devir kesici, mavi = rejen. Bilerek koyu, tek görünüm. */
+:root{
+  --bg:#07090e; --panel:#0e131c; --panel-2:#141b27; --panel-3:#1c2536; --line:#232d3f; --line-2:#2f3b52;
+  --fg:#eef1f7; --muted:#8793a8; --accent:#ffae2b; --red:#ff4d3a; --blue:#58a6ff; --ok:#5fd28e;
+  --display:'Saira Condensed','Arial Narrow',sans-serif; --body:'Manrope',system-ui,-apple-system,sans-serif;
+  --r:18px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100svh;color:var(--fg);font:15px/1.5 var(--body);padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);-webkit-tap-highlight-color:transparent;overflow-x:hidden;
+  background:radial-gradient(120% 60% at 50% -10%,#14203a 0%,transparent 60%),var(--bg);background-attachment:fixed}
+.wrap{max-width:1120px;margin:0 auto;padding:14px 16px 48px;display:grid;gap:16px}
+
+header{display:flex;align-items:center;justify-content:space-between;gap:10px 14px;flex-wrap:wrap}
+.brand{font:800 30px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;display:flex;flex-direction:column}
+.brand::after{content:"";width:34px;height:4px;border-radius:2px;background:var(--accent);margin-top:7px}
+.brand small{order:3;font:500 12px/1.35 var(--body);letter-spacing:.01em;text-transform:none;color:var(--muted);margin-top:7px;max-width:34ch}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:12px;padding:4px 10px;border-radius:99px;border:1px solid var(--line);color:var(--muted);display:inline-flex;align-items:center;gap:6px;background:var(--panel)}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--line-2);flex:none}
+.chip[data-state=ok]{color:var(--fg)} .chip[data-state=ok]::before{background:var(--ok)}
+.chip[data-state=wait]::before{background:var(--accent)}
+body[data-mode=test] .chips{display:none}
+
+.main{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.stage,.side{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;min-width:0;align-content:start}
+@media (min-width:860px){
+  .wrap{padding-top:24px;gap:24px}
+  .main{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:28px;align-items:start}
+  .side{position:sticky;top:18px}
+}
+@media (min-width:1500px){
+  .wrap{max-width:1560px}
+  .main{grid-template-columns:minmax(0,760px) minmax(0,1fr)}
+}
+
+.cockpit{position:relative;border:1px solid var(--line);border-radius:26px;padding:12px 12px 16px;display:grid;gap:12px;min-width:0;overflow:hidden;
+  background:radial-gradient(90% 70% at 50% 0%,#18233a 0%,transparent 70%),repeating-linear-gradient(45deg,rgba(255,255,255,.018) 0 2px,transparent 2px 4px),var(--panel);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 18px 40px -22px #000}
+#gauge{display:block;width:min(100%,600px,calc((100svh - 150px) * 1.111));max-width:100%;aspect-ratio:10/9;margin:0 auto}
+.bars{display:grid;grid-template-columns:auto 1fr;gap:7px 12px;align-items:center;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;padding:0 6px}
+.bar{height:8px;border-radius:4px;background:var(--panel-3);overflow:hidden;
+  -webkit-mask:repeating-linear-gradient(90deg,#000 0 6px,transparent 6px 8px);mask:repeating-linear-gradient(90deg,#000 0 6px,transparent 6px 8px)}
+.bar i{display:block;height:100%;transform-origin:left;transform:scaleX(0);transition:transform 60ms linear}
+#thr-bar{background:var(--accent)} #brk-bar{background:var(--blue)}
+.banner{background:#241b0c;border:1px solid #5a4316;color:#ffd99a;border-radius:12px;padding:10px 12px;font-size:14px}
+.banner[hidden]{display:none}
+
+.controls{display:grid;gap:10px}
+.start{appearance:none;border:0;border-radius:18px;min-height:68px;padding:16px;font:800 26px/1 var(--display);letter-spacing:.14em;text-transform:uppercase;background:linear-gradient(180deg,#ffbe55,var(--accent));color:#1a1205;cursor:pointer;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 6px 0 #a86a05,0 14px 24px -10px rgba(0,0,0,.7);transform:translateY(0);transition:transform .1s ease,box-shadow .1s ease,background-color .2s ease}
+.start:active{transform:translateY(5px);box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 1px 0 #a86a05}
+.start:disabled{opacity:.6;cursor:progress}
+body[data-running="1"] .start{background:var(--panel-2);color:var(--fg);box-shadow:inset 0 0 0 1.5px var(--red),0 6px 0 #0a0e15}
+body[data-running="1"] .start:active{box-shadow:inset 0 0 0 1.5px var(--red);transform:translateY(5px)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px}
+.seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:700 14px var(--body);min-height:46px;padding:8px 10px;border-radius:10px;cursor:pointer;transition:background-color .15s ease,color .15s ease}
+.seg button:hover{color:var(--fg)}
+.seg-3{grid-template-columns:repeat(3,1fr)}
+.row-label{font-size:14px;font-weight:700}
+.seg button[aria-pressed=true]{background:var(--panel-3);color:var(--fg);box-shadow:inset 0 -3px 0 var(--accent)}
+
+/* pedallar: fren solda geniş ve alçak, gaz sağda uzun; yüzeyinde kauçuk nervürler, doluluk --lv (0..1) */
+.pedals{display:none;grid-template-columns:1.2fr 1fr;gap:14px;align-items:end;height:clamp(190px,32svh,280px);padding-bottom:8px;user-select:none;-webkit-user-select:none;touch-action:none}
+body[data-mode=test] .pedals{display:grid}
+.pedal{--lv:0;--c:var(--accent);position:relative;overflow:hidden;appearance:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;padding:14px 8px 0;width:100%;border:1px solid var(--line-2);color:var(--fg);cursor:pointer;touch-action:none;-webkit-touch-callout:none;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.07) 0 3px,transparent 3px 15px),linear-gradient(180deg,#1b2433,#0f1520);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.1),inset 0 -14px 24px -14px #000,0 8px 0 #05070b;transition:transform .08s ease,box-shadow .08s ease}
+.pedal[data-on="1"]{transform:translateY(4px);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),inset 0 -14px 24px -14px #000,0 4px 0 #05070b;border-color:var(--c)}
+.pedal > *{pointer-events:none}
+#pedal-brake{--c:var(--blue);height:72%;border-radius:18px 18px 24px 24px}
+#pedal-gas{--c:var(--accent);height:100%;border-radius:24px 24px 18px 18px}
+.pedal::before{content:"";position:absolute;inset:auto 0 0 0;height:calc(var(--lv) * 100%);
+  background:repeating-linear-gradient(180deg,rgba(0,0,0,.28) 0 3px,transparent 3px 15px),var(--c);opacity:.62;border-top:3px solid var(--c)}
+.pedal .p-name{position:relative;font:800 28px/1 var(--display);letter-spacing:.16em;text-transform:uppercase}
+.pedal .p-hint{position:relative;font:500 11.5px/1.3 var(--body);color:var(--muted);text-align:center}
+.pedal[data-on="1"] .p-hint{color:var(--fg)}
+.show-hint{display:none;margin:0;font-size:12.5px;color:var(--muted)}
+body[data-mode=test] .show-hint{display:block}
+.kbd-hint{display:none;margin:0;font-size:12.5px;color:var(--muted)}
+.kbd-hint kbd{font:600 11px var(--body);background:var(--panel-2);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:var(--fg)}
+@media (hover:hover) and (pointer:fine){body[data-mode=test] .kbd-hint{display:block}}
+
+h2{font:800 12px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;display:flex;align-items:center;gap:10px}
+h2::after{content:"";flex:1;height:1px;background:var(--line)}
+/* motor seçici: kategori çipleri + kategori başına grup; telefonda yatay kaydırmalı şerit, geniş ekranda ızgara */
+.car-filter{display:flex;gap:6px;overflow-x:auto;margin:0 -16px 14px;padding:2px 16px 6px;scrollbar-width:none;overscroll-behavior-x:contain}
+.car-filter::-webkit-scrollbar{display:none}
+.car-fchip{appearance:none;flex:none;display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:0 13px;border-radius:99px;border:1px solid var(--line);background:var(--panel);color:var(--muted);font:700 13px var(--body);cursor:pointer;white-space:nowrap;transition:background-color .15s ease,color .15s ease,border-color .15s ease}
+.car-fchip em{font:600 11px var(--body);font-style:normal;color:var(--muted);background:var(--panel-3);border-radius:99px;padding:2px 6px;font-variant-numeric:tabular-nums}
+.car-fchip:hover{color:var(--fg);border-color:var(--line-2)}
+.car-fchip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#1a1205}
+.car-fchip[aria-pressed=true] em{background:rgba(26,18,5,.16);color:#1a1205}
+@media (min-width:860px){.car-filter{flex-wrap:wrap;overflow:visible;margin:0 0 14px;padding:0}}
+.cars{display:grid;grid-template-columns:minmax(0,1fr);gap:20px}
+.car-group,.side>section{min-width:0}
+.car-group-h{font:700 11px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 9px 2px}
+.car-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px}
+@media (max-width:859px){
+  .car-strip{display:flex;overflow-x:auto;scroll-snap-type:x proximity;margin:0 -16px;padding:2px 16px 10px;scrollbar-width:none;overscroll-behavior-x:contain;scroll-padding-inline:16px}
+  .car-strip::-webkit-scrollbar{display:none}
+  .car{flex:0 0 172px;scroll-snap-align:start}
+}
+.car{--h:30;--cc:hsl(var(--h) 70% 58%);appearance:none;position:relative;text-align:left;border:1px solid var(--line);background:linear-gradient(180deg,var(--panel-2),var(--panel));color:var(--fg);border-radius:16px;padding:14px 12px 12px 16px;display:grid;gap:5px;align-content:start;cursor:pointer;font:inherit;min-width:0;min-height:138px;overflow:hidden;transition:border-color .15s ease,transform .12s ease}
+.car::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--cc);opacity:.55}
+.car:hover{border-color:var(--line-2)}
+.car:active{transform:scale(.98)}
+.car[aria-pressed=true]{border-color:var(--accent);background:linear-gradient(180deg,#1f2a3f,var(--panel-2))}
+.car[aria-pressed=true]::before{opacity:1;width:5px;background:var(--accent)}
+.car[aria-pressed=true]::after{content:"Seçili";position:absolute;top:10px;right:10px;font:800 10px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:#1a1205;background:var(--accent);padding:4px 6px;border-radius:5px}
+.car-name{font:800 22px/1.05 var(--display);letter-spacing:.03em;overflow-wrap:anywhere}
+.car[aria-pressed=true] .car-name{padding-right:50px}
+.car-spec{color:var(--muted);font-size:12px;line-height:1.35}
+.car-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
+.car-tag{font:700 10.5px/1 var(--body);letter-spacing:.04em;text-transform:uppercase;padding:4px 6px;border-radius:5px;color:var(--cc);border:1px solid color-mix(in srgb,var(--cc) 45%,transparent)}
+.car-rng{align-self:end;margin-top:6px;display:grid;gap:4px}
+.car-rng-bar{height:4px;border-radius:2px;background:var(--panel-3);position:relative;overflow:hidden}
+.car-rng-bar i{position:absolute;top:0;bottom:0;border-radius:2px;background:var(--cc)}
+.car[aria-pressed=true] .car-rng-bar i{background:var(--accent)}
+.car-src{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.car[aria-pressed=true] .car-src{color:var(--fg)}
+
+.settings{display:grid;gap:18px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px}
+.settings h2{margin:0}
+.row{display:grid;gap:8px}
+.row label{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:14px;font-weight:700}
+.row output{color:var(--accent);font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:transparent;margin:0;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--panel-3)}
+input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--panel-3)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;margin-top:-9px;border-radius:50%;background:var(--accent);border:3px solid var(--bg);box-shadow:0 0 0 1px var(--line-2)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--accent);border:3px solid var(--bg)}
+.ghost{appearance:none;background:transparent;border:1px solid var(--line-2);color:var(--fg);border-radius:12px;min-height:46px;padding:10px 12px;font:700 14px var(--body);cursor:pointer}
+.ghost:hover{background:var(--panel-2)}
+
+details{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:0 16px}
+summary{cursor:pointer;font-weight:700;padding:14px 0;min-height:46px}
+details[open] summary{border-bottom:1px solid var(--line);margin-bottom:2px}
+details ol{padding-left:20px;margin:12px 0 0;display:grid;gap:7px;color:#c9d2e2}
+details p{color:#c9d2e2;margin:12px 0 14px}
+details ol + p{margin-top:12px}
+.credits{font-size:12px;color:var(--muted);margin:0;line-height:1.7}
+.credits strong{color:var(--fg);font-weight:700}
+.credits ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:2px}
+.credits a{color:var(--fg);text-underline-offset:3px}
+#toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--panel-3);border:1px solid var(--line-2);padding:10px 14px;border-radius:12px;max-width:calc(100% - 32px);font-size:14px;z-index:5;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#toast[hidden]{display:none}
+/* telefonda test modu: pedallar ilk ekranda kalsın diye gösterge biraz küçülür */
+@media (max-width:859px){
+  body[data-mode=test] #gauge{width:min(100%,250px,calc((100svh - 120px) * 1.111))}
+  body[data-mode=test] .cockpit{padding:8px 10px 12px;gap:8px}
+  body[data-mode=test] .start{min-height:56px;font-size:23px;padding:12px}
+  body[data-mode=test] .seg button{min-height:40px}
+  body[data-mode=test] .controls{gap:8px}
+  body[data-mode=test] .brand small{display:none}
+  body[data-mode=test] .wrap{gap:10px;padding-top:10px}
+  body[data-mode=test] .pedals{height:clamp(150px,calc(100svh - 500px),300px);padding-bottom:6px}
+}
+@media (max-width:380px){.wrap{padding-inline:12px}.car-filter,.car-strip{margin-inline:-12px;padding-inline:12px}.brand{font-size:27px}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+.add-own{display:grid;gap:6px;margin-bottom:14px;padding:12px;border:1px dashed var(--line);border-radius:14px}
+.add-own[data-drag="1"]{border-color:var(--accent);background:rgba(255,173,51,.06)}
+.add-own-btn{appearance:none;border:1px solid var(--accent);background:transparent;color:var(--accent);font:700 15px var(--body);padding:12px 14px;border-radius:12px;cursor:pointer;text-align:left}
+.add-own-btn:disabled{opacity:.6;cursor:progress}
+.add-own-hint{margin:0;font-size:12.5px;color:var(--muted);line-height:1.45}
+.car-del{position:absolute;right:8px;bottom:8px;font:600 11px var(--body);color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:3px 8px;background:transparent;cursor:pointer}
+.car-del:hover{color:var(--fg);border-color:var(--red)}
+</style>
+</head>
+<body data-running="0">
+<div class="wrap">
+  <header>
+    <div class="brand">Kükreme<small>Gaz ve frene anında tepki veren gerçek motor sesi</small></div>
+    <div class="chips" aria-live="polite">
+      <span class="chip" id="chip-motion">İvmeölçer</span>
+      <span class="chip" id="chip-gps">GPS</span>
+      <span class="chip" id="chip-cal">Kalibrasyon</span>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="stage">
+      <section class="cockpit" aria-label="Gösterge">
+        <canvas id="gauge" role="img" aria-label="Devir saati, vites ve hız göstergesi"></canvas>
+        <div class="bars">
+          <span>Gaz</span><div class="bar"><i id="thr-bar"></i></div>
+          <span>Rejen</span><div class="bar"><i id="brk-bar"></i></div>
+        </div>
+        <div class="banner" id="cal-banner" hidden><strong>Kalibrasyon.</strong> <span id="cal-text"></span></div>
+      </section>
+
+      <div class="controls">
+        <button class="start" id="start" type="button">Motoru çalıştır</button>
+        <div class="seg" role="group" aria-label="Mod">
+          <button type="button" data-setmode="drive" aria-pressed="true">Yolda · sensör</button>
+          <button type="button" data-setmode="test" aria-pressed="false">Test · pedal</button>
+        </div>
+      </div>
+
+      <div class="pedals">
+        <button class="pedal" id="pedal-brake" type="button" aria-label="Fren pedalı"><span class="p-name">Fren</span><span class="p-hint">Yukarı kaydır = sert fren</span></button>
+        <button class="pedal" id="pedal-gas" type="button" aria-label="Gaz pedalı"><span class="p-name">Gaz</span><span class="p-hint">Yukarı kaydır = tam gaz</span></button>
+      </div>
+      <p class="show-hint">Araç dururken <strong>fren + gaza birlikte bas</strong>: boşta gaz, kesiciye kadar bağırtırsın.</p>
+      <p class="kbd-hint">Klavye: <kbd>W</kbd> / <kbd>↑</kbd> gaz, <kbd>S</kbd> / <kbd>↓</kbd> / <kbd>Boşluk</kbd> fren, <kbd>Shift</kbd> ile yarım basış.</p>
+    </div>
+
+    <div class="side">
+      <section aria-label="Motor seçimi">
+        <h2>Motor</h2>
+        <div class="add-own" id="add-own">
+          <button class="add-own-btn" id="add-own-btn" type="button">+ Kendi sesini ekle</button>
+          <p class="add-own-hint" id="add-own-hint">Beğendiğin bir motor sesi dosyasını (mp3, m4a, wav) seç ya da buraya sürükle. Devrin yükseldiği yerleri kendim bulurum. Dosya sadece bu cihazda kalır.</p>
+          <input type="file" id="add-own-file" accept="audio/*,video/mp4,.m4a,.mp3,.wav,.ogg,.webm" hidden>
+        </div>
+        <div class="cars" id="cars"></div>
+      </section>
+
+      <section class="settings" aria-label="Ayarlar">
+        <h2>Ayarlar</h2>
+        <div class="row">
+          <span class="row-label">Sürüş karakteri</span>
+          <div class="seg seg-3" role="group" aria-label="Sürüş karakteri">
+            <button type="button" data-style="calm" aria-pressed="false">Sakin</button>
+            <button type="button" data-style="sport" aria-pressed="true">Spor</button>
+            <button type="button" data-style="race" aria-pressed="false">Yarış</button>
+          </div>
+        </div>
+        <div class="row">
+          <label for="volume">Ses <output id="volume-out"></output></label>
+          <input type="range" id="volume" min="0" max="1" step="0.01">
+        </div>
+        <div class="row">
+          <label for="response">Gaz tepkisi <output id="response-out"></output></label>
+          <input type="range" id="response" min="1.4" max="5" step="0.1">
+        </div>
+        <div class="row">
+          <label for="crackle">Egzoz patlaması <output id="crackle-out"></output></label>
+          <input type="range" id="crackle" min="0" max="1" step="0.01">
+        </div>
+        <div class="row">
+          <label for="city">Şehir keyfi <output id="city-out"></output></label>
+          <input type="range" id="city" min="1" max="2.4" step="0.05">
+        </div>
+        <button class="ghost" id="raw-play" type="button">Ham kaydı dinle</button>
+        <button class="ghost" id="recal" type="button">Yeniden kalibre et</button>
+      </section>
+
+      <details>
+        <summary>Arabada nasıl kullanılır</summary>
+        <ol>
+          <li>iPhone'u tutucuya <strong>sabit</strong> tak. Dik ya da yatık fark etmez, oynamasın yeter.</li>
+          <li>Telefonu arabaya Bluetooth ile bağla, sessiz modu kapat.</li>
+          <li>Araç dururken <strong>Motoru çalıştır</strong>'a bas, hareket ve konum iznini ver.</li>
+          <li>İlk kalkışta 1–2 saniye net gaz ver. Telefon ileri yönü öğrenir, bir daha sormaz.</li>
+          <li>Bundan sonra gaza bastığın an devir kalkar, ayağını çekince rejenle birlikte devir düşer ve egzoz patlar.</li>
+        </ol>
+        <p>Telefonun yerini değiştirirsen kalibrasyon kendiliğinden yenilenir. Ayarları sürüşten önce yap, yolda ekrana dokunma.</p>
+      </details>
+
+      <div class="credits">
+        <strong>Sesler gerçek dyno kayıtları (Freesound)</strong>
+        <ul>
+          <li>Supra — <a href="https://freesound.org/people/editboy23/sounds/496171/" target="_blank" rel="noopener">editboy23</a> (CC0)</li>
+          <li>GT86 — <a href="https://freesound.org/people/dezoris/sounds/183654/" target="_blank" rel="noopener">dezoris</a> (CC0)</li>
+          <li>GT86 Kompresör — <a href="https://freesound.org/people/dezoris/sounds/191194/" target="_blank" rel="noopener">dezoris</a> (CC BY 4.0)</li>
+          <li>454 V8 — <a href="https://freesound.org/people/Ears68/sounds/213665/" target="_blank" rel="noopener">Ears68</a> (CC0)</li>
+          <li>Ferrari — <a href="https://freesound.org/people/biholao/sounds/370278/" target="_blank" rel="noopener">biholao</a> (CC0)</li>
+          <li>BMW M3 — <a href="https://freesound.org/people/ikbenraar/sounds/415276/" target="_blank" rel="noopener">ikbenraar</a> (CC BY 4.0)</li>
+          <li>Chevrolet Camaro — <a href="https://freesound.org/people/biholao/sounds/370277/" target="_blank" rel="noopener">biholao</a> (CC0)</li>
+          <li>Egzoz patlamaları — <a href="https://freesound.org/people/craigsmith/sounds/675723/" target="_blank" rel="noopener">craigsmith</a> (CC0), <a href="https://freesound.org/people/klankbeeld/sounds/873008/" target="_blank" rel="noopener">klankbeeld</a> (CC BY 4.0), <a href="https://freesound.org/people/TRP/sounds/717867/" target="_blank" rel="noopener">TRP</a> (CC0)</li>
+          <li>Honda VTEC — <a href="https://freesound.org/people/EvanBoyerman/sounds/754775/" target="_blank" rel="noopener">EvanBoyerman</a> (CC BY 4.0)</li>
+          <li>Dubai Süper Spor — <a href="https://freesound.org/people/florianreichelt/sounds/457560/" target="_blank" rel="noopener">florianreichelt</a> (CC0)</li>
+          <li>Porsche 911 — <a href="https://freesound.org/people/jerry.berumen/sounds/772802/" target="_blank" rel="noopener">jerry.berumen</a> (CC BY 4.0)</li>
+          <li>Yarış Arabası — <a href="https://freesound.org/people/biholao/sounds/370276/" target="_blank" rel="noopener">biholao</a> (CC0)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast" role="status" hidden></div>
+<script src="custom.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
