@@ -950,18 +950,74 @@
     });
     if (audio.maps) audio.maps[rec.id] = rec.map;
   }
-  // özel klasör: sadece Berk'in kendi kullanımı için eklenen sesler (herkese açık yayına girmez)
+  // Özel sesler: Berk'in kendi/izinli kayıtları. Yerelde düz klasörden, yayında ise
+  // şifreli (AES-GCM) dosyalardan yüklenir; şifre bir kez girilir, cihaz hatırlar.
+  let ozelIdx = null;
+  function registerOzel(list) {
+    for (const [id, o] of Object.entries(list)) {
+      CARS[id] = Object.assign({ ozel: true }, o.car);
+      audio.maps[id] = o.map;
+    }
+  }
   async function loadOzel() {
+    await loadMaps();
     try {
       const r = await fetch('ozel/ozel.json', { cache: 'no-cache' });
-      if (!r.ok) return;
-      const list = await r.json();
-      await loadMaps();
-      for (const [id, o] of Object.entries(list)) {
-        CARS[id] = Object.assign({ ozel: true }, o.car);
-        audio.maps[id] = o.map;
-      }
+      if (r.ok) { registerOzel(await r.json()); return; }
     } catch {}
+    try {
+      const r = await fetch('ozel-enc/index.json', { cache: 'no-cache' });
+      if (!r.ok) return;
+      ozelIdx = await r.json();
+    } catch { return; }
+    const pw = store.get('ozelPw', null);
+    if (pw && (await unlockOzel(pw, true))) return;
+    showOzelLock();
+  }
+  async function unlockOzel(pw, silent) {
+    try {
+      const hex = (h) => new Uint8Array(h.match(/../g).map((x) => parseInt(x, 16)));
+      const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+      const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: hex(ozelIdx.salt), iterations: ozelIdx.iters, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+      const get = async (orig) => {
+        const f = ozelIdx.files.find((x) => x.orig === orig);
+        const buf = new Uint8Array(await fetch('ozel-enc/' + f.name).then((r) => r.arrayBuffer()));
+        return crypto.subtle.decrypt({ name: 'AES-GCM', iv: buf.slice(0, 12) }, key, buf.slice(12));
+      };
+      const list = JSON.parse(new TextDecoder().decode(await get('ozel.json')));
+      for (const o of Object.values(list)) {
+        const mp3 = await get(o.car.file.split('/').pop());
+        o.car.file = URL.createObjectURL(new Blob([mp3], { type: 'audio/mpeg' }));
+      }
+      registerOzel(list);
+      store.set('ozelPw', pw);
+      const lock = document.getElementById('ozel-lock');
+      if (lock) lock.remove();
+      const want = store.get('car', null);
+      if (want && CARS[want]) settings.car = want;
+      renderCars();
+      if (!silent) toast('Özel sesler açıldı.');
+      return true;
+    } catch {
+      if (!silent) toast('Şifre yanlış.');
+      return false;
+    }
+  }
+  function showOzelLock() {
+    if (document.getElementById('ozel-lock')) return;
+    const box = document.createElement('form');
+    box.id = 'ozel-lock';
+    box.className = 'ozel-lock';
+    box.innerHTML = '<label for="ozel-pw">Özel sesler kilitli (M5, varexler, Cargo)</label><div><input id="ozel-pw" type="password" autocomplete="off" placeholder="Şifre"><button type="submit">Aç</button></div>';
+    box.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = box.querySelector('button');
+      btn.disabled = true; btn.textContent = '…';
+      await unlockOzel(box.querySelector('input').value.trim(), false);
+      btn.disabled = false; btn.textContent = 'Aç';
+    });
+    const cars = $('cars');
+    cars.parentNode.insertBefore(box, cars);
   }
   async function loadCustom() {
     await loadOzel();
